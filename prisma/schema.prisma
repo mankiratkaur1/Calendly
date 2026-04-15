@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id          String        @id @default(cuid())
+  name        String
+  email       String
+  username    String        @unique
+  timezone    String
+  avatarUrl   String?
+  createdAt     DateTime      @default(now())
+  eventTypes    EventType[]
+  availability  Availability[]
+  dateOverrides DateOverride[]
+  meetingPolls  MeetingPoll[]
+}
+
+model EventType {
+  id              String    @id @default(cuid())
+  userId          String
+  name            String
+  slug            String
+  durationMinutes Int
+  description     String?
+  color           String
+  isActive        Boolean   @default(true)
+  bufferBefore    Int       @default(0)
+  bufferAfter     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id])
+  bookings        Booking[]
+
+  @@unique([userId, slug])
+}
+
+model Availability {
+  id          String   @id @default(cuid())
+  userId      String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isAvailable Boolean  @default(true)
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  eventTypeId  String
+  inviteeName  String
+  inviteeEmail String
+  startTime    DateTime
+  endTime      DateTime
+  status       BookingStatus @default(CONFIRMED)
+  cancelReason String?
+  createdAt    DateTime      @default(now())
+  eventType    EventType     @relation(fields: [eventTypeId], references: [id])
+}
+
+model DateOverride {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  startTime   String
+  endTime     String
+  isBlocked   Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model MeetingPoll {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  duration     String
+  location     String
+  description  String?
+  reserveTimes Boolean  @default(false)
+  showVotes    Boolean  @default(true)
+  link         String   @unique
+  status       String   @default("Created")
+  votes        Int      @default(0)
+  selections   String[]
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
